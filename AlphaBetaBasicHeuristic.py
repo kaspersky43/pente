@@ -171,5 +171,20 @@ class MyPlayer(Player):
 	def heuristic(self, position):
 		h = 10000*position.patternCount('WWWWW') - 10000*position.patternCount('BBBBB')
 		h += 100*position.captures()[0] - 100*position.captures()[1]
-		h += position.patternCount('WW') - position.patternCount('BB')
+		
+		
+
+		h += 40* (position.patternCount('WWWW') - position.patternCount('BBBB'))
+		h += 30* (position.patternCount('WWW') - position.patternCount('BBB'))
+		h += 10* (position.patternCount('WW') - position.patternCount('BB'))
+		
+		# Lead the opponent to the 4 * 3 situation 
+		h +=  80 * (position.patternCount('WWWW') + position.patternCount('WWW') - position.patternCount('BBBB') - position.patternCount('BBB'))
+		h +=  80 * (position.patternCount('W  W') + position.patternCount('BB B') - position.patternCount('B  B') - position.patternCount('WW W')) 
+		h +=  80 * (position.patternCount('W W') + position.patternCount('B B') - position.patternCount('B B') - position.patternCount('W W'))
+		h +=  80 * (position.patternCount('WW  ') + position.patternCount('BB B') - position.patternCount('BB  ') - position.patternCount('WW W'))
+		h +=  80 * (position.patternCount('W W W') + position.patternCount('B  B') - position.patternCount('B B B') - position.patternCount('W  W'))
+		h +=  80 * (position.patternCount('W W ') + position.patternCount('WW ') + position.patternCount('BB  B ') - position.patternCount('B B ') - position.patternCount('BB ') - position.patternCount('WW  W '))
+		h +=  80 * (position.patternCount('WW   ') + position.patternCount('W W') + position.patternCount('B B B') - position.patternCount('BB   ') - position.patternCount('B B') - position.patternCount('W W W'))
+		
 		return h

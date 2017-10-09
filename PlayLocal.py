@@ -36,6 +36,11 @@ def getMove(current,position):
 
 moveSequence = ''
 
+numMoves = [0,0]
+ply = [0.,0.]
+nodeCount = [0,0]
+totalTime = [0.,0.]
+
 while position.winner() is None:
 	position.display()
 	if graphics:
@@ -43,7 +48,6 @@ while position.winner() is None:
 	
 	current = position.playerToMove()
 	startTime = time()
-	#move = players[current].calculateMove(position)
 	move = getMove(current,position)
 	elapsed = time() - startTime
 
@@ -53,6 +57,12 @@ while position.winner() is None:
 	print
 	
 	moveSequence += chr(65+move[0]) + chr(65+move[1])
+	
+	if position.turn() >= 3:
+		numMoves[current] += 1
+		ply[current] += players[current]._ply
+		nodeCount[current] += players[current]._nodeCount
+		totalTime[current] += elapsed
 	
 	if position.legalMove(move):
 		players[1-current].opponentMove(move)
@@ -66,6 +76,13 @@ position.display()
 if graphics:
 	graphics.draw(position)
 	
+for i in range(2):
+	print
+	print 'Player', i, 'stats:'
+	print '     Average ply', ply[i]/numMoves[i]
+	print '     Nodes/sec', nodeCount[i]/totalTime[i]
+	print '     Branching factor', (nodeCount[i]/numMoves[i])**(numMoves[i]/ply[i])
+
 
 print
 print 'Move sequence:'

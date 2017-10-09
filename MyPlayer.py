@@ -24,22 +24,22 @@ class MyPlayer(Player):
 				beta = 1<<64
 				options = self.orderMoves(position)
 				if self._draw:
-					self._draw.drawOptions(position, [], None, bestValue, depth)
+					self._draw.drawOptions(position, [], None, bestValue, len(options), depth)
 				print
 				print 'Max player'
 				for o in options:
 					if bestMove is None:
 						bestMove = o
 					movesConsidered.append(o)
-					print 'Examining move option', o, self.movePriority(position,o),
+					print 'Examining move option', o, 'priority =', self.movePriority(position,o),
 					optionValue = self.minPlayer(position.applyMove(o), depth, alpha, beta)
 					if optionValue > bestValue:
 						bestValue = optionValue
 						bestMove = o
 						alpha = bestValue
 					if self._draw:
-						self._draw.drawOptions(position, movesConsidered, bestMove, bestValue, depth)
-					print optionValue, bestValue
+						self._draw.drawOptions(position, movesConsidered, bestMove, bestValue, (self._nodeCount*len(options)/len(movesConsidered))**(1./depth), depth)
+					print 'value =', optionValue, 'best value = ', bestValue
 			else:
 				# The min player
 				bestValue = 1<<64
@@ -47,7 +47,7 @@ class MyPlayer(Player):
 				beta = 1<<64
 				options = self.orderMoves(position)
 				if self._draw:
-					self._draw.drawOptions(position, [], None, bestValue, depth)
+					self._draw.drawOptions(position, [], None, bestValue, len(options), depth)
 				print
 				print 'Min player'
 				oe = []
@@ -55,22 +55,22 @@ class MyPlayer(Player):
 					if bestMove is None:
 						bestMove = o
 					movesConsidered.append(o)
-					print 'Examining move option', o, self.movePriority(position,o),
+					print 'Examining move option', o, 'priority =', self.movePriority(position,o),
 					optionValue = self.maxPlayer(position.applyMove(o), depth, alpha, beta)
 					if optionValue < bestValue:
 						bestValue = optionValue
 						bestMove = o
 						beta = bestValue
 					if self._draw:
-						self._draw.drawOptions(position, movesConsidered, bestMove, bestValue, depth)
-					print optionValue, bestValue
+						self._draw.drawOptions(position, movesConsidered, bestMove, bestValue, (self._nodeCount*len(options)/len(movesConsidered))**(1./depth), depth)
+					print 'value =', optionValue, 'best value = ', bestValue
 		except TimeoutError:
 			print
 			print 'Timeout'
 		
 		print
 		print self._nodeCount, 'nodes examined'
-		
+		self._ply = depth - 1 + float(len(movesConsidered))/len(options)	
 		return bestMove
 		
 	def maxPlayer(self, position, depth, alpha, beta):
@@ -170,6 +170,19 @@ class MyPlayer(Player):
 		
 	def heuristic(self, position):
 		h = 10000*position.patternCount('WWWWW') - 10000*position.patternCount('BBBBB')
-		h += 100*position.captures()[0] - 100*position.captures()[1]
-		h += position.patternCount('WW') - position.patternCount('BB')
+		h += 1000*position.captures()[0] - 1000*position.captures()[1]
+
+                #Create 4 stones and 3 stones crossing each other so that the player can use it to push force to the attack
+                h += 500*(position.patternCount(' WW W ') + position.patternCount('W  W') - position.patternCount(' BB B ') - position.patternCount('B  B'))
+                h += 500*(position.patternCount(' WW W ') + position.patternCount('W W') - position.patternCount(' BB B ') - position.patternCount('B B'))
+                h += 500*(position.patternCount(' WW W ') + position.patternCount('WW  ') - position.patternCount(' BB B ') - position.patternCount('BB  '))
+                h += 500*(position.patternCount('W W W') + position.patternCount('W  W') - position.patternCount('B B B') - position.patternCount('B  B'))
+                h += 500*(position.patternCount(' W W ') + position.patternCount('WW  W') + position.patternCount('WW ') - position.patternCount(' B B ') - position.patternCount('BB  B') - position.patternCount('BB '))
+                h += 500*(position.patternCount('W W W') + position.patternCount('WW   ') + position.patternCount('W W') - position.patternCount('B B B') - position.patternCount('BB   ') - position.patternCount('B B'))
+
+
+                h += 30*(position.patternCount('WWWW') - position.patternCount('BBBB'))
+		h += 20*(position.patternCount('WWW') - position.patternCount('BBB'))               
+                
+		h += 10*(position.patternCount('WW') - position.patternCount('BB'))
 		return h

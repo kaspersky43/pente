@@ -1,0 +1,6 @@
+Woo Seok Yang
+
+Part 1. 
+4 * 3 cross sequence moves added to the calculation of the heuristics
+
+More coefficients added for the different consequent rows

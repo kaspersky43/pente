@@ -10,6 +10,9 @@ class DrawPente:
 		else:
 			self._canvas = Canvas(scale*21, scale*21.5)
 			
+		self._renderedLarge = set()
+		self._renderedSmall = [ set(), set() ]
+			
 		self._canvas.setAutoRefresh(False)
 		self._canvas.setBackgroundColor('tan')
 		
@@ -40,6 +43,7 @@ class DrawPente:
 			
 		# For each of the options boards do more
 		self._plys = []
+		self._ebfs = []
 		self._values = []
 		self._optionPieces = []
 		for player in range(2):
@@ -54,10 +58,12 @@ class DrawPente:
 				
 			self._plys.append(Text(['White  Ply 0', 'Black  Ply 0'][player], .6*scale, Point(23*scale, .5*scale + 10.5*player*scale)))
 			self._canvas.add(self._plys[player])
+			self._ebfs.append(Text('EBF: ?', .6*scale, Point(26.5*scale, .5*scale + 10.5*player*scale)))
+			self._canvas.add(self._ebfs[player])
 			if player == 0:
-				self._values.append(Text("-Infinity", .6*scale, Point(28*scale, .5*scale + 10.5*player*scale)))
+				self._values.append(Text("-Infinity", .6*scale, Point(30*scale, .5*scale + 10.5*player*scale)))
 			else:
-				self._values.append(Text("Infinity", .6*scale, Point(28*scale, .5*scale + 10.5*player*scale)))
+				self._values.append(Text("Infinity", .6*scale, Point(30*scale, .5*scale + 10.5*player*scale)))
 			self._canvas.add(self._values[player])
 			
 			for r in range(19):
@@ -75,60 +81,71 @@ class DrawPente:
 		else:
 			self._message.setMessage(['White','Black'][position.winner()] + ' won')
 		self._captures.setMessage('Captures: %d %d' % (position.captures()[0],position.captures()[1]))
+	
+		s = bin(position._positions[0] | position._positions[1])[2:][::-1]
+		l = [ i for i in range(len(s)) if s[i] == '1' ]
+		toBeRendered = set( [ (i/19, i%19) for i in l ] )
+		
+		for (r,c) in self._renderedLarge - toBeRendered:
+			self._canvas.remove(self._pieces[r][c])
 			
-		for r in range(19):
-			for c in range(19):
+		for (r,c) in toBeRendered - self._renderedLarge:
+			self._canvas.add(self._pieces[r][c])
+			
+		for (r,c) in toBeRendered:
 				p = position.position((r,c))
-				if p is None and self._pieces[r][c] in self._canvas:
-					self._canvas.remove(self._pieces[r][c])
-					
 				if p == 0:
-					if self._pieces[r][c] not in self._canvas:
-						self._canvas.add(self._pieces[r][c])
 					self._pieces[r][c].setFillColor('white')
 				elif p == 1:
-					if self._pieces[r][c] not in self._canvas:
-						self._canvas.add(self._pieces[r][c])
 					self._pieces[r][c].setFillColor('black')
+					
+		self._renderedLarge = toBeRendered
 				
 		self._canvas.refresh()
 
-	def drawOptions(self, position, movesConsidered, bestMove, bestValue, depth):
+	def drawOptions(self, position, movesConsidered, bestMove, bestValue, ebf, depth):
 		options = set(movesConsidered)
 		if bestMove:
 			options.add(bestMove)
 		player = position.playerToMove()
-			
-		for r in range(19):
-			for c in range(19):
-				p = position.position((r,c))
-				if self._optionPieces[player][r][c] in self._canvas:
-					self._canvas.remove(self._optionPieces[player][r][c])
-					
-				if p == 0:
-					if self._optionPieces[player][r][c] not in self._canvas:
-						self._canvas.add(self._optionPieces[player][r][c])
-					self._optionPieces[player][r][c].setFillColor('white')
-				elif p == 1:
-					if self._optionPieces[player][r][c] not in self._canvas:
-						self._canvas.add(self._optionPieces[player][r][c])
-					self._optionPieces[player][r][c].setFillColor('black')
+		
+		s = bin(position._positions[0] | position._positions[1])[2:][::-1]
+		l = [ i for i in range(len(s)) if s[i] == '1' ]
+		toBeRendered = set( [ (i/19, i%19) for i in l ] )
+		
+		for m in movesConsidered:
+			toBeRendered.add(m)
+		if bestMove is not None:
+			toBeRendered.add(bestMove)
+		
+		for (r,c) in self._renderedSmall[player] - toBeRendered:
+			self._canvas.remove(self._optionPieces[player][r][c])
+		for (r,c) in toBeRendered - self._renderedSmall[player]:
+			self._canvas.add(self._optionPieces[player][r][c])
+		
+		for (r,c) in toBeRendered:
+			p = position.position((r,c))
+			if p == 0:
+				self._optionPieces[player][r][c].setFillColor('white')
+			elif p == 1:
+				self._optionPieces[player][r][c].setFillColor('black')
 			
 		for (r,c) in options:
 			self._optionPieces[player][r][c].setFillColor('red')
-			if self._optionPieces[player][r][c] not in self._canvas:
-				self._canvas.add(self._optionPieces[player][r][c])
 				
 		if bestMove is not None:		
 			(r,c) = bestMove
 			self._optionPieces[player][r][c].setFillColor('green')
 		
 		self._plys[player].setMessage(['White  Ply %d', 'Black  Ply %d'][player]%depth)
-		if bestValue > (1<<48):			
+		if bestValue > (1<<31):			
 			self._values[player].setMessage("Infinity")
-		elif bestValue < -(1<<48):			
+		elif bestValue < -(1<<31):			
 			self._values[player].setMessage("-Infinity")
 		else:
 			self._values[player].setMessage(str(bestValue))
+		self._ebfs[player].setMessage('EBF: %6.3f' % ebf)
+		
+		self._renderedSmall[player] = toBeRendered
 		
 		self._canvas.refresh()
